@@ -18,7 +18,7 @@
     {
       "label": "Start Backend",
       "type": "shell",
-      "command": "set -a; [ -f ../.env ] && . ../.env; set +a; mvn -q spring-boot:run",
+      "command": "set -a; [ -f ../.env ] && . ../.env; set +a; ./mvnw -q spring-boot:run",
       "options": {
         "cwd": "${workspaceFolder}/backend"
       },

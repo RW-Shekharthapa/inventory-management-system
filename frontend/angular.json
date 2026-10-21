@@ -2,7 +2,8 @@
   "$schema": "./node_modules/@angular/cli/lib/config/schema.json",
   "version": 1,
   "cli": {
-    "packageManager": "npm"
+    "packageManager": "npm",
+    "analytics": "6d877dfc-3af3-47e9-ad44-fc425637dc10"
   },
   "newProjectRoot": "projects",
   "projects": {
@@ -47,14 +48,14 @@
             "development": {
               "optimization": false,
               "extractLicenses": false,
-              "sourceMap": true,
-              "baseHref": "/proxy/4200/"
+              "sourceMap": true
             }
           },
           "defaultConfiguration": "production"
         },
         "serve": {
           "builder": "@angular/build:dev-server",
+          "options": { "proxyConfig": "proxy.conf.json" },
           "configurations": {
             "production": {
               "buildTarget": "frontend:build:production"

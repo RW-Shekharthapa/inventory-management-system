@@ -1,0 +1,99 @@
+# Replace <ACCOUNT>/<REGION> with your ECR registry. DB creds come from Secret "inventory-db"
+# (see README). Requires the AWS Load Balancer Controller for the Ingress.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: inventory
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+  namespace: inventory
+spec:
+  replicas: 2
+  selector:
+    matchLabels: { app: backend }
+  template:
+    metadata:
+      labels: { app: backend }
+    spec:
+      containers:
+        - name: backend
+          image: <ACCOUNT>.dkr.ecr.<REGION>.amazonaws.com/inventory-backend:latest
+          ports:
+            - containerPort: 8080
+          envFrom:
+            - secretRef: { name: inventory-db }   # JDBC_URL, DB_USER, DB_PASSWORD
+          readinessProbe:
+            httpGet: { path: /actuator/health, port: 8080 }
+            initialDelaySeconds: 20
+          livenessProbe:
+            httpGet: { path: /actuator/health, port: 8080 }
+            initialDelaySeconds: 40
+          resources:
+            requests: { cpu: 250m, memory: 512Mi }
+            limits: { memory: 768Mi }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend
+  namespace: inventory
+spec:
+  selector: { app: backend }
+  ports:
+    - port: 8080
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+  namespace: inventory
+spec:
+  replicas: 2
+  selector:
+    matchLabels: { app: frontend }
+  template:
+    metadata:
+      labels: { app: frontend }
+    spec:
+      containers:
+        - name: frontend
+          image: <ACCOUNT>.dkr.ecr.<REGION>.amazonaws.com/inventory-frontend:latest
+          ports:
+            - containerPort: 8080
+          readinessProbe:
+            httpGet: { path: /, port: 8080 }
+          resources:
+            requests: { cpu: 50m, memory: 64Mi }
+            limits: { memory: 128Mi }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend
+  namespace: inventory
+spec:
+  selector: { app: frontend }
+  ports:
+    - port: 80
+      targetPort: 8080
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: inventory
+  namespace: inventory
+  annotations:
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+spec:
+  ingressClassName: alb
+  rules:
+    - http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service: { name: frontend, port: { number: 80 } }
