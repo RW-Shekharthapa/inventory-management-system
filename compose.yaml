@@ -1,0 +1,35 @@
+# Komodo Stack: point it at this repo, file path "compose.yaml",
+# and set DB_PASSWORD (and optionally DB_USER, PORT) in the Stack's Environment.
+services:
+  inventory:
+    build: .
+    image: inventory:latest
+    restart: unless-stopped
+    ports:
+      - "${PORT:-8080}:8080"
+    environment:
+      JDBC_URL: jdbc:mysql://db:3306/inventory
+      DB_USER: ${DB_USER:-inventory}
+      DB_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD}
+    depends_on:
+      db:
+        condition: service_healthy
+
+  db:
+    image: mysql:8.4
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: inventory
+      MYSQL_USER: ${DB_USER:-inventory}
+      MYSQL_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD}
+      MYSQL_RANDOM_ROOT_PASSWORD: "yes"
+    volumes:
+      - db-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+volumes:
+  db-data:

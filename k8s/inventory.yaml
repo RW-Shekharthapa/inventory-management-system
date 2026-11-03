@@ -8,19 +8,19 @@ metadata:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: backend
+  name: inventory
   namespace: inventory
 spec:
   replicas: 2
   selector:
-    matchLabels: { app: backend }
+    matchLabels: { app: inventory }
   template:
     metadata:
-      labels: { app: backend }
+      labels: { app: inventory }
     spec:
       containers:
-        - name: backend
-          image: <ACCOUNT>.dkr.ecr.<REGION>.amazonaws.com/inventory-backend:latest
+        - name: inventory
+          image: 330821152525.dkr.ecr.ap-south-1.amazonaws.com/inventory:v1
           ports:
             - containerPort: 8080
           envFrom:
@@ -38,44 +38,10 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: backend
+  name: inventory
   namespace: inventory
 spec:
-  selector: { app: backend }
-  ports:
-    - port: 8080
----
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: frontend
-  namespace: inventory
-spec:
-  replicas: 2
-  selector:
-    matchLabels: { app: frontend }
-  template:
-    metadata:
-      labels: { app: frontend }
-    spec:
-      containers:
-        - name: frontend
-          image: <ACCOUNT>.dkr.ecr.<REGION>.amazonaws.com/inventory-frontend:latest
-          ports:
-            - containerPort: 8080
-          readinessProbe:
-            httpGet: { path: /, port: 8080 }
-          resources:
-            requests: { cpu: 50m, memory: 64Mi }
-            limits: { memory: 128Mi }
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: frontend
-  namespace: inventory
-spec:
-  selector: { app: frontend }
+  selector: { app: inventory }
   ports:
     - port: 80
       targetPort: 8080
@@ -88,6 +54,7 @@ metadata:
   annotations:
     alb.ingress.kubernetes.io/scheme: internet-facing
     alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/healthcheck-path: /actuator/health
 spec:
   ingressClassName: alb
   rules:
@@ -96,4 +63,4 @@ spec:
           - path: /
             pathType: Prefix
             backend:
-              service: { name: frontend, port: { number: 80 } }
+              service: { name: inventory, port: { number: 80 } }
